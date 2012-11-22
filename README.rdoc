@@ -8,7 +8,7 @@ http://img40.imageshack.us/img40/5797/redminetimelogplugin.png
 
 == Compatibility
 
-Tested only on in Redmine 2.3
+Tested only on Redmine 2.3
 
 == Getting the plugin
 
