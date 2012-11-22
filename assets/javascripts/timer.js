@@ -136,8 +136,7 @@
 	$.fn.timerlog_timer = function()
 	{
 		return this.each(function(){
-			var field = $(this),
-				lang = $.timerlog_timer_i18n;
+			var field = $(this);
 
 			if (!field.length || $.data(field[0], 'timerlog_timer'))
 				return;
@@ -147,6 +146,9 @@
 			var timer,
 				val,
 				startTime,
+				lang = $.timerlog_timer_i18n,
+				event_namespace =  '.timerlog_timer',
+				form = field.closest('form'),
 				updateInterval = 30 * 1000,
 				tpl = $(
 					'<span class="timerlog-timer"> <button class="timerlog-timer-button"></button>'+ ' <em class="timerlog-timer-text"><small><span></span></small></em></span>'
@@ -169,6 +171,7 @@
 				startTime = getTimestamp();
 				timer = window.setInterval(tick, updateInterval);
 				button.html(lang._('stop'));
+				form.bind('submit' + event_namespace, stopTimer);
 				tick();
 			}
 
@@ -182,6 +185,7 @@
 				tick();
 				val = null;
 				startTime = null;
+				form.unbind(event_namespace);
 				button.html(lang._('start'));
 				text.html('');
 			}
