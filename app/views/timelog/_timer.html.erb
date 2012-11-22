@@ -1,6 +1,8 @@
 <% content_for :header_tags do %>
     <% unless current_language.to_s == 'en' %>
-        <%= javascript_include_tag "i18n/#{current_language.to_s}.js", :plugin => "timelog_timer" %>
+        <% if File.exists?(File.join(File.dirname(__FILE__), "../../../assets/javascripts/i18n/#{current_language.to_s}.js")) %>
+            <%= javascript_include_tag "i18n/#{current_language.to_s}.js", :plugin => "timelog_timer" %>
+        <% end %>
     <% end %>
 <%= javascript_include_tag "timer.js", :plugin => "timelog_timer" %>
 <% end %>
