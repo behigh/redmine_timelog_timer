@@ -4,7 +4,7 @@ A simple javascript timer for Hours field in timelog form.
 
 == Screenshots
 
-http://img600.imageshack.us/img600/5797/redminetimelogplugin.png
+http://img40.imageshack.us/img40/5797/redminetimelogplugin.png
 
 == Getting the plugin
 
