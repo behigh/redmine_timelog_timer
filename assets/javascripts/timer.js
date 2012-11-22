@@ -2,8 +2,6 @@
 
 	'use strict';
 
-	var fieldSelector = '#time_entry_hours';
-
 	$.timerlog_timer_i18n = {
 		_p: {
 			minutes: ['{0} minute', '{0} minutes'],
@@ -135,114 +133,122 @@
 
 	}.set($.timerlog_timer_i18n || {});
 
-	$(function(){
-		var field = $(fieldSelector),
-			lang = $.timerlog_timer_i18n;
+	$.fn.timerlog_timer = function()
+	{
+		return this.each(function(){
+			var field = $(this),
+				lang = $.timerlog_timer_i18n;
 
-		if (!field.length)
-			return;
+			if (!field.length || $.data(field[0], 'timerlog_timer'))
+				return;
 
-		var timer,
-			val,
-			startTime,
-			updateInterval = 30 * 1000,
-			tpl = $(
-				'<span class="timerlog-timer"> <button class="timerlog-timer-button"></button>'+ ' <em class="timerlog-timer-text"><small><span></span></small></em></span>'
-			),
-			button = tpl.find('button'),
-			text = tpl.find('em span');
+			$.data(field[0], 'timerlog_timer', true);
 
-		button.html(lang._('start')).click(function(e){
+			var timer,
+				val,
+				startTime,
+				updateInterval = 30 * 1000,
+				tpl = $(
+					'<span class="timerlog-timer"> <button class="timerlog-timer-button"></button>'+ ' <em class="timerlog-timer-text"><small><span></span></small></em></span>'
+				),
+				button = tpl.find('button'),
+				text = tpl.find('em span');
+
+			button.html(lang._('start')).click(function(e){
 				e.preventDefault();
 				(timer ? stopTimer() : startTimer());
 
-		});
-		tpl.insertAfter(field);
+			});
+			tpl.insertAfter(field);
 
 
-		function startTimer()
-		{
-			stopTimer();
-			val = getVal(field.val());
-			startTime = getTimestamp();
-			timer = window.setInterval(tick, updateInterval);
-			button.html(lang._('stop'));
-			tick();
-		}
-
-		function stopTimer()
-		{
-			if (timer)
+			function startTimer()
 			{
-				window.clearInterval(timer);
-				timer = null;
+				stopTimer();
+				val = getVal(field.val());
+				startTime = getTimestamp();
+				timer = window.setInterval(tick, updateInterval);
+				button.html(lang._('stop'));
+				tick();
 			}
-			tick();
-			val = null;
-			startTime = null;
-			button.html(lang._('start'));
-			text.html('');
-		}
 
-		function tick()
-		{
-			if (startTime)
+			function stopTimer()
 			{
-				var diff = getTimestamp() - startTime,
-					secs = diff / 3600,
-					new_val = getVal(val + secs);
-				field.val(number_format(new_val, 2, '.', ''));
-				var h = parseInt(new_val, 10),
-					m = parseInt((new_val - h) * 60, 10);
-				text.html((h ? lang._('hours', h) + ' ' : '') + lang._('minutes', (m > 0 && m < 10) ? '0' + m : m));
-			}
-		}
-
-		function getVal(val)
-		{
-			return Math.abs(parseFloat(number_format(val, 2, '.', ''))) || 0;
-		}
-
-		function getTimestamp()
-		{
-			return Math.round(new Date().getTime() / 1000);
-		}
-
-		/**
-		 * phpjs.org
-		 * @param {Number} number
-		 * @param {Integer} [decimals=0]
-		 * @param {String} [dec_point="."]
-		 * @param {String} [thousands_sep=","]
-		 * @return {String}
-		 */
-		function number_format(number, decimals, dec_point, thousands_sep)
-		{
-			// Strip all characters but numerical ones.
-			number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
-			var n = !isFinite(+number) ? 0 : +number,
-				prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
-				sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
-				dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
-				s = '',
-				toFixedFix = function (n, prec)
+				if (timer)
 				{
-					var k = Math.pow(10, prec);
-					return '' + Math.round(n * k) / k;
-				};
-			// Fix for IE parseFloat(0.55).toFixed(0) = 0;
-			s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
-			if (s[0].length > 3)
-			{
-				s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+					window.clearInterval(timer);
+					timer = null;
+				}
+				tick();
+				val = null;
+				startTime = null;
+				button.html(lang._('start'));
+				text.html('');
 			}
-			if ((s[1] || '').length < prec)
-			{
-				s[1] = s[1] || '';
-				s[1] += new Array(prec - s[1].length + 1).join('0');
-			}
-			return s.join(dec);
-		}
 
-	});
+			function tick()
+			{
+				if (startTime)
+				{
+					var diff = getTimestamp() - startTime,
+						secs = diff / 3600,
+						new_val = getVal(val + secs);
+					field.val(number_format(new_val, 2, '.', ''));
+					var h = parseInt(new_val, 10),
+						m = parseInt((new_val - h) * 60, 10);
+					text.html((h ? lang._('hours', h) + ' ' : '') + lang._('minutes', (m > 0 && m < 10) ? '0' + m : m));
+				}
+			}
+
+			function getVal(val)
+			{
+				return Math.abs(parseFloat(number_format(val, 2, '.', ''))) || 0;
+			}
+
+			function getTimestamp()
+			{
+				return Math.round(new Date().getTime() / 1000);
+			}
+
+			/**
+			 * phpjs.org
+			 * @param {Number} number
+			 * @param {Integer} [decimals=0]
+			 * @param {String} [dec_point="."]
+			 * @param {String} [thousands_sep=","]
+			 * @return {String}
+			 */
+			function number_format(number, decimals, dec_point, thousands_sep)
+			{
+				// Strip all characters but numerical ones.
+				number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+				var n = !isFinite(+number) ? 0 : +number,
+					prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+					sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+					dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+					s = '',
+					toFixedFix = function (n, prec)
+					{
+						var k = Math.pow(10, prec);
+						return '' + Math.round(n * k) / k;
+					};
+				// Fix for IE parseFloat(0.55).toFixed(0) = 0;
+				s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+				if (s[0].length > 3)
+				{
+					s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+				}
+				if ((s[1] || '').length < prec)
+				{
+					s[1] = s[1] || '';
+					s[1] += new Array(prec - s[1].length + 1).join('0');
+				}
+				return s.join(dec);
+			}
+
+		});
+	};
 }(jQuery));
+
+// init
+jQuery(function($){$('#time_entry_hours').timerlog_timer()});
