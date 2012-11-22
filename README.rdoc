@@ -6,6 +6,10 @@ A simple javascript timer for Hours field in timelog form.
 
 http://img40.imageshack.us/img40/5797/redminetimelogplugin.png
 
+== Compatibility
+
+Tested only on in Redmine 2.3
+
 == Getting the plugin
 
 A zip archive can be gotten from {GitHub}[https://github.com/behigh/redmine_timelog_timer]
