@@ -1,3 +1,6 @@
 <% content_for :header_tags do %>
-<%= javascript_include_tag "i18n/#{current_language.to_s}.js", "timer.js", :plugin => "timelog_timer" %>
+    <% unless current_language.to_s == 'en' %>
+        <%= javascript_include_tag "i18n/#{current_language.to_s}.js", :plugin => "timelog_timer" %>
+    <% end %>
+<%= javascript_include_tag "timer.js", :plugin => "timelog_timer" %>
 <% end %>
