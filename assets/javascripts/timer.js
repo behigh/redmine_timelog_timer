@@ -146,6 +146,7 @@
 			var timer,
 				val,
 				startTime,
+				data,
 				lang = $.timerlog_timer_i18n,
 				event_namespace =  '.timerlog_timer',
 				form = field.closest('form'),
@@ -155,7 +156,7 @@
 				),
 				button = tpl.find('button'),
 				text = tpl.find('em span');
-
+			
 			button.html(lang._('start')).click(function(e){
 				e.preventDefault();
 				(timer ? stopTimer() : startTimer());
@@ -163,17 +164,21 @@
 			});
 			tpl.insertAfter(field);
 
+			
 
 			function startTimer()
-			{
+			{			
 				stopTimer();
-				val = getVal(field.val());
-				startTime = getTimestamp();
+				field.attr('disabled','disabled');
+				val = getVal(field.val());				
+				startTime = getTimestamp();							   
+							
 				timer = window.setInterval(tick, updateInterval);
 				button.html(lang._('stop'));
 				form.bind('submit' + event_namespace, stopTimer);
-				tick();
+				tick();				
 			}
+			
 
 			function stopTimer()
 			{
@@ -187,7 +192,11 @@
 				startTime = null;
 				form.unbind(event_namespace);
 				button.html(lang._('start'));
-				text.html('');
+				text.html('');				
+				
+				data.started = false;				
+				saveDataToLocalStorage();
+				field.removeAttr('disabled');
 			}
 
 			function tick()
@@ -197,11 +206,18 @@
 					var diff = getTimestamp() - startTime,
 						secs = diff / 3600,
 						new_val = getVal(val + secs);
-					field.val(number_format(new_val, 2, '.', ''));
+					field.val(number_format(new_val, 2, '.', ''));								
+					
 					var h = parseInt(new_val, 10),
 						m = parseInt((new_val - h) * 60, 10);
 					text.html((h ? lang._('hours', h) + ' ' : '') + lang._('minutes', (m > 0 && m < 10) ? '0' + m : m));
-				}
+					
+                    data.started = true;
+                    data.val = new_val;
+                    data.lastUpdated = getTimestamp();	
+					
+					saveDataToLocalStorage();
+			    }
 			}
 
 			function getVal(val)
@@ -249,7 +265,46 @@
 				}
 				return s.join(dec);
 			}
+			
+			function saveDataToLocalStorage()
+			{
+			  if(localStorage)
+			  {
+			   localStorage["redmine_timer"] = JSON.stringify(data);
+			  }
+			}
 
+			// debug
+			//localStorage.removeItem("redmine_timer");
+			
+		// Get stored value
+		if(localStorage && localStorage["redmine_timer"])
+		{  // if there is data to be loaded from localStorage	    
+			 data = JSON.parse(localStorage["redmine_timer"]);
+				  				  				 
+			 if(data.val)
+				  {
+				    var new_val = data.val;
+			   	    if(data.started && data.lastUpdated)
+				    {
+				       new_val = data.val + (getTimestamp() - data.lastUpdated) / 3600;
+					   data.lastUpdated = getTimestamp();
+				    }	
+		  			 field.val(number_format(new_val, 2, '.', ''));	
+					 data.val = new_val;
+				  }
+				  
+				  if(data.started)
+				  {
+				     startTimer();
+				  }
+				  
+				  saveDataToLocalStorage();
+			   }
+			   else
+			   {  // if there is nothing to be loaded from localStorage
+			      data = {};				  				  
+			   }			         
 		});
 	};
 }(jQuery));
