@@ -7,7 +7,13 @@
 			minutes: ['{0} minute', '{0} minutes'],
 			hours: ['{0} hour', '{0} hours'],
 			start: 'Start',
-			stop: 'Stop'
+			stop: 'Stop',
+			title: 'Timer',
+			activeTimer: 'You have a running timer.',
+			actionMerge: 'Merge with current',
+			remove: 'Stop & Remove',
+			openForm: 'Open form',
+			removeConfirm: 'Are you sure?'
 		},
 		set: function(key, value)
 		{
@@ -39,7 +45,7 @@
 			switch (type)
 			{
 				case 'undefined':
-					 return type;
+					return type;
 				case 'function':
 					return this._p[key].apply(this, _args);
 				default:
@@ -92,7 +98,7 @@
 				_float = parseFloat(num) - _num,
 				_args = Array.prototype.slice.call(arguments).slice(1),
 				str
-			;
+				;
 
 			switch (_args.length)
 			{
@@ -133,64 +139,92 @@
 
 	}.set($.timerlog_timer_i18n || {});
 
-	$.fn.timerlog_timer = function()
+	/**
+	 *
+	 * @return {*}
+	 */
+	function timerlog_timer()
 	{
-		return this.each(function(){
-			var field = $(this);
+		var val, timer, startTime,
+			updateInterval = 30 * 1000,
+			fieldSelector = '#time_entry_hours',
+			field = $(fieldSelector).eq(0),
+			event_namespace = '.timerlog_timer',
+			storageName = 'timerlog_timer',
+			lang = $.timerlog_timer_i18n,
+			funcs = {
+				init: function(){},
+				startTimer: function(){},
+				stopTimer: function(){},
+				tick: function(){}
+			},
+			button, text, storageChecked, form, initialVal,
+			initiated
+			;
 
-			if (!field.length || $.data(field[0], 'timerlog_timer'))
-				return;
-
-			$.data(field[0], 'timerlog_timer', true);
-
-			var timer,
-				val,
-				startTime,
-				lang = $.timerlog_timer_i18n,
-				event_namespace =  '.timerlog_timer',
-				form = field.closest('form'),
-				updateInterval = 30 * 1000,
-				tpl = $(
-					'<span class="timerlog-timer"> <button class="timerlog-timer-button"></button>'+ ' <em class="timerlog-timer-text"><small><span></span></small></em></span>'
-				),
-				button = tpl.find('button'),
-				text = tpl.find('em span');
-
-			button.html(lang._('start')).click(function(e){
-				e.preventDefault();
-				(timer ? stopTimer() : startTimer());
-
-			});
-			tpl.insertAfter(field);
-
-
-			function startTimer()
+		if (field.length)
+		{
+			field.attr('autocomplete', 'off');
+			funcs.init = function()
 			{
-				stopTimer();
+				var tpl = $(
+					'<span class="timerlog-timer"> <button class="timerlog-timer-button"></button>' + ' <em class="timerlog-timer-text"><small><span></span></small></em></span>'
+				);
+				button = tpl.find('button');
+				text = tpl.find('em span');
+				form = field.closest('form');
+				initialVal = getVal(field.val());
+				button.html(lang._('start')).click(function (e)
+				{
+					e.preventDefault();
+					(timer ? funcs.stopTimer() : funcs.startTimer());
+
+				});
+				field.parent().append(tpl);
+
+				form.bind('submit' + event_namespace, function(){
+					funcs.stopTimer();
+					saveTimer();
+				});
+			};
+
+			funcs.startTimer = function ()
+			{
+				if (!storageChecked && !checkTimer())
+				{
+					return false;
+				}
+				funcs.stopTimer(true);
 				val = getVal(field.val());
 				startTime = getTimestamp();
-				timer = window.setInterval(tick, updateInterval);
+				timer = window.setInterval(funcs.tick, updateInterval);
 				button.html(lang._('stop'));
-				form.bind('submit' + event_namespace, stopTimer);
-				tick();
-			}
+				//form.bind('submit' + event_namespace, funcs.stopTimer);
+				funcs.tick();
+				saveTimer(startTime,  getVal(getVal(field.val()) - initialVal));
+			};
 
-			function stopTimer()
+			funcs.stopTimer = function (notSaveStorage)
 			{
 				if (timer)
 				{
 					window.clearInterval(timer);
 					timer = null;
 				}
-				tick();
+				funcs.tick();
 				val = null;
 				startTime = null;
-				form.unbind(event_namespace);
+				//form.unbind(event_namespace);
 				button.html(lang._('start'));
 				text.html('');
-			}
 
-			function tick()
+				if (!notSaveStorage)
+				{
+					saveTimer(undefined, getVal(getVal(field.val()) - initialVal));
+				}
+			};
+
+			funcs.tick = function ()
 			{
 				if (startTime)
 				{
@@ -198,61 +232,245 @@
 						secs = diff / 3600,
 						new_val = getVal(val + secs);
 					field.val(number_format(new_val, 2, '.', ''));
-					var h = parseInt(new_val, 10),
-						m = parseInt((new_val - h) * 60, 10);
-					text.html((h ? lang._('hours', h) + ' ' : '') + lang._('minutes', (m > 0 && m < 10) ? '0' + m : m));
+					text.html(format_time(new_val));
 				}
 			}
-
-			function getVal(val)
+		}
+		else
+		{
+			funcs.init = function()
 			{
-				return Math.abs(parseFloat(number_format(val, 2, '.', ''))) || 0;
-			}
+				var data = store.get(storageName);
+				if (data)
+				{
+					var
+						tpl = $(
+							'<span style="margin-left:1em">' + lang._('title') + ': <a class="timerlog-timer-text"></a></span>'
+						),
+						a = tpl.find('a');
 
-			function getTimestamp()
-			{
-				return Math.round(new Date().getTime() / 1000);
-			}
+					a.attr('href', data.p + data.s);
 
-			/**
-			 * phpjs.org
-			 * @param {Number} number
-			 * @param {Integer} [decimals=0]
-			 * @param {String} [dec_point="."]
-			 * @param {String} [thousands_sep=","]
-			 * @return {String}
-			 */
-			function number_format(number, decimals, dec_point, thousands_sep)
-			{
-				// Strip all characters but numerical ones.
-				number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
-				var n = !isFinite(+number) ? 0 : +number,
-					prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
-					sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
-					dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
-					s = '',
-					toFixedFix = function (n, prec)
+					$('#top-menu').append(tpl);
+
+					if (data.t)
 					{
-						var k = Math.pow(10, prec);
-						return '' + Math.round(n * k) / k;
-					};
-				// Fix for IE parseFloat(0.55).toFixed(0) = 0;
-				s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
-				if (s[0].length > 3)
-				{
-					s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+						var tick = function()
+						{
+							var diff = getTimestamp() - data.t,
+								hours = diff / 3600,
+								new_val = getVal(data.h + hours);
+							a.html(format_time(new_val));
+						};
+						tick();
+						window.setInterval(tick, updateInterval);
+					}
+					else
+					{
+						a.html(format_time(data.h));
+					}
 				}
-				if ((s[1] || '').length < prec)
+
+			};
+		}
+
+		// Init
+		function init()
+		{
+			if (initiated)
+				return false
+
+			initiated = true;
+			funcs.init();
+			checkTimer();
+		}
+
+		if (field.length)
+		{
+			var up_block = $('#update #issue-form');
+			if (up_block.length && !up_block.is(':visible'))
+			{
+				$('.icon.icon-edit').bind('click' + event_namespace, function(){
+					init();
+					$(this).unbind(event_namespace);
+				});
+			}
+			else
+			{
+				init();
+			}
+		}
+		else
+		{
+			init();
+		}
+
+
+		function checkTimer()
+		{
+			var data = store.get(storageName);
+			if (data)
+			{
+				var setData = function ()
 				{
-					s[1] = s[1] || '';
-					s[1] += new Array(prec - s[1].length + 1).join('0');
+					if (data.t)
+					{
+						startTime = data.t;
+						val = initialVal + data.h;
+						funcs.startTimer();
+					}
+					else
+					{
+						field.val(initialVal + data.h);
+					}
+				};
+
+				if (data.p == location.pathname)
+				{
+					storageChecked = true;
+					setData();
 				}
-				return s.join(dec);
+				else
+				{
+					if (!field.length) // no time log form
+					{
+
+					}
+					else
+					{
+						var dialog = $('<p>' + lang._('activeTimer') + '</p>');
+						dialog.dialog({
+							modal: true,
+							//resizable: false,
+							title: lang._('title'),
+							close: function ()
+							{
+								dialog.remove()
+							},
+							buttons: [
+								{
+									text: lang._('actionMerge'),
+									click: function ()
+									{
+										//saveTimer();
+										storageChecked = true;
+										setData();
+										dialog.dialog('close');
+									}
+								},
+								{
+									text: lang._('openForm'),
+									click: function ()
+									{
+										dialog.dialog('close');
+										location.href = data.p + data.s;
+									}
+								},
+								{
+									text: lang._('remove'),
+									click: function ()
+									{
+										if (confirm(lang._('removeConfirm')))
+										{
+											dialog.dialog('close');
+											saveTimer();
+											storageChecked = true;
+										}
+									}
+								}
+							]
+						});
+						return false;
+					}
+				}
 			}
 
-		});
-	};
-}(jQuery));
+			return true;
+		}
 
-// init
-jQuery(function($){$('#time_entry_hours').timerlog_timer()});
+		function format_time(val)
+		{
+			var h = parseInt(val, 10),
+				m = parseInt((val - h) * 60, 10);
+			return (h ? lang._('hours', h) + ' ' : '') + lang._('minutes', (m > 0 && m < 10) ? '0' + m : m);
+		}
+
+
+		function getVal(val)
+		{
+			return Math.abs(parseFloat(number_format(val, 2, '.', ''))) || 0;
+		}
+
+		/**
+		 * Save timer to storage
+		 * @param (integer} timestamp
+		 * @param {float} hours
+		 */
+		function saveTimer(timestamp, hours)
+		{
+			if (timestamp === undefined && hours === undefined)
+			{
+				store.remove(storageName);
+				return;
+			}
+			var data = {
+				p: location.pathname,
+				s: location.search || '',
+				t: timestamp || false,
+				h: hours || 0
+			};
+			store.set(storageName, data);
+		}
+	}
+
+	// Helpers
+
+	/**
+	 * phpjs.org
+	 * @param {Number} number
+	 * @param {Integer} [decimals=0]
+	 * @param {String} [dec_point="."]
+	 * @param {String} [thousands_sep=","]
+	 * @return {String}
+	 */
+	function number_format(number, decimals, dec_point, thousands_sep)
+	{
+		// Strip all characters but numerical ones.
+		number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+		var n = !isFinite(+number) ? 0 : +number,
+			prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+			sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+			dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+			s = '',
+			toFixedFix = function (n, prec)
+			{
+				var k = Math.pow(10, prec);
+				return '' + Math.round(n * k) / k;
+			};
+		// Fix for IE parseFloat(0.55).toFixed(0) = 0;
+		s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+		if (s[0].length > 3)
+		{
+			s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+		}
+		if ((s[1] || '').length < prec)
+		{
+			s[1] = s[1] || '';
+			s[1] += new Array(prec - s[1].length + 1).join('0');
+		}
+		return s.join(dec);
+	}
+
+	/**
+	 * Get current unix timestamp
+	 * @return {Number}
+	 */
+	function getTimestamp()
+	{
+		return Math.round(new Date().getTime() / 1000);
+	}
+
+
+	// init
+	$(timerlog_timer);
+}(jQuery));

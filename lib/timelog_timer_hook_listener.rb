@@ -1,3 +1,3 @@
 class TimelogTimerHookListener < Redmine::Hook::ViewListener
-  render_on :view_timelog_edit_form_bottom, :partial => "timelog/timer" 
+  render_on :view_layouts_base_html_head, :partial => "timelog/timer"
 end

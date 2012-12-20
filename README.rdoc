@@ -2,6 +2,14 @@
 
 A simple javascript timer for Hours field in timelog form.
 
+== Change Log
+
+=== v2.0.0
+
+ * Save timer using localStorage
+ * Added timer to modify task form
+ * Display timer (if runned) on top bar in all pages
+
 == Screenshots
 
 http://img40.imageshack.us/img40/5797/redminetimelogplugin.png
