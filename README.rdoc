@@ -1,6 +1,6 @@
-= Timelog Timer plugin
+= Redmine Timelog Timer plugin
 
-A simple javascript timer for Hours field in timelog form.
+A simple javascript timer for Hours field in timelog form of Redmine.
 
 == Change Log
 
