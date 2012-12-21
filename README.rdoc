@@ -16,7 +16,7 @@ http://img40.imageshack.us/img40/5797/redminetimelogplugin.png
 
 == Compatibility
 
-Tested only on Redmine 2.1.3
+Tested only on Redmine 2.1.3, 2.1.4, 2.2.0
 
 == Getting the plugin
 
