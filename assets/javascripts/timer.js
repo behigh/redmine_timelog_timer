@@ -245,7 +245,7 @@
 				{
 					var
 						tpl = $(
-							'<span style="margin-left:1em">' + lang._('title') + ': <a class="timerlog-timer-text"></a></span>'
+							'<span style="margin-left:1em;" class="timerlog-timer-label">' + lang._('title') + ': <a class="timerlog-timer-text"></a></span>'
 						),
 						a = tpl.find('a');
 
